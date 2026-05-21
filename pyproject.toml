@@ -9,6 +9,7 @@ readme = "readme.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.7"
 dependencies = [
+    "tqdm==4.67.3"
 ]
 
 [project.optional-dependencies]
