@@ -18,6 +18,9 @@ dev = [
     "pylint",
 ]
 
+[tool.setuptools]
+packages = ["loggy"]
+
 [tool.pylint.main]
 fail-under = 6
 py-version = "3.12"
