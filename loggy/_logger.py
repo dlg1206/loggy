@@ -256,7 +256,7 @@ def _make_tqdm_desc(description: str) -> str:
     :param description: Text description of process
     :return: Full formatted description
     """
-    log_record = LogRecord(Level.INFO, Severity.INFO, description, caller=_resolve_caller(2))
+    log_record = LogRecord(Level.INFO, Severity.INFO, description, caller=_resolve_caller())
     return log_record.format(False)
 
 

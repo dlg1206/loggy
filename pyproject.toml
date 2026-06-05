@@ -4,7 +4,7 @@ version = "0.0.1"
 authors = [
     { name = "Derek Garcia" },
 ]
-description = "Personal logging library"
+description = "Personal python logging and utilities library"
 readme = "readme.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.7"
