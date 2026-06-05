@@ -19,6 +19,10 @@ info = _logger.info
 warn = _logger.warn
 error = _logger.error
 
+async_data_queue = _logger.async_data_queue
+threaded_data_queue = _logger.threaded_data_queue
+manual_data_queue = _logger.manual_data_queue
+
 fatal = _logger.fatal
 
 __all__ = ['Level']
