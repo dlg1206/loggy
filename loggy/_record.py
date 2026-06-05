@@ -33,10 +33,9 @@ class LogRecord:
         :return: Formatted log message
         """
         color = WHITE_ON_RED if self.severity == Severity.FATAL else COLORS[(self.level, self.severity)]
-        tag = f"{color}{self.severity.name:<5}{CLEAR}"
         parts = [
             self.timestamp.isoformat(),
-            f"{tag}",  # fixed-width column
+            f"{color}{self.severity.name:<5}{CLEAR}",  # fixed-width column
         ]
         # add caller if provided
         if self.caller:
