@@ -1,10 +1,11 @@
-<div style="display: flex; align-items: center;">
-  <img alt="spiffy dog" src="assets/loggy.png" width="100" style="margin-right: 16px;">
-  <h1 style="margin: 0;">Loggy: Personal Logging and Utilities Python Library</h1>
-</div>
+<h1>
+    <img alt="spiffy dog" src="assets/loggy.png" width="100">
+    Loggy
+</h1>
 
-> Feel free to use it or don't, this saves me time copy-pasting the same code between projects. There are many like it,
-> but this one is mine.
+> Personal Python logging and utilities library. Feel free to use it or don't,
+> this saves me time copy-pasting the same code between projects.
+> There are many like it, but this one is mine.
 
 ## Features
 
@@ -152,3 +153,33 @@ loggy.info("Done!")
 ```
 
 <img src="assets/data_queue_debug.png" alt="terminal debug loading bar">
+
+### Additional Details
+
+> Include additional details not embedded in the message, included by default. Supported by all methods
+
+```python
+import loggy
+
+loggy.info("Hello", foo=True, bar="bazz")
+
+# Disable additional details
+loggy.info("Hello", emit_details=False, foo=True, bar="bazz")
+```
+
+<img src="assets/emit_details.png" alt="logging with and without details">
+
+### Exceptions
+
+> Include exceptions in the details. Supported by warn, error, and fatal methods
+
+```python
+import loggy
+
+try:
+    raise RuntimeError("foobar")
+except RuntimeError as e:
+    loggy.error(str(e), exception=e)
+```
+
+<img src="assets/error_handle.png" alt="log when passing execption">
