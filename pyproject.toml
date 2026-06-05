@@ -6,7 +6,8 @@ authors = [
 ]
 description = "Personal python logging and utilities library"
 readme = "readme.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.7"
 dependencies = [
     "tqdm==4.67.3"
