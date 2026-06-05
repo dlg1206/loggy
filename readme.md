@@ -1,4 +1,7 @@
-# Loggy: Personal Logging and Utilities Python Library
+<div style="display: flex; align-items: center;">
+  <img alt="spiffy dog" src="assets/loggy.png" width="100" style="margin-right: 16px;">
+  <h1 style="margin: 0;">Loggy: Personal Logging and Utilities Python Library</h1>
+</div>
 
 > Feel free to use it or don't, this saves me time copy-pasting the same code between projects. There are many like it,
 > but this one is mine.
