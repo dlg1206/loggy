@@ -7,6 +7,7 @@ Description: Public facing methods for loggy
 """
 from _levels import Level
 from _logger import Logger
+from .util import Timer, format_time
 
 _logger = Logger()
 
@@ -25,4 +26,4 @@ manual_data_queue = _logger.manual_data_queue
 
 fatal = _logger.fatal
 
-__all__ = ['Level']
+__all__ = ['Level', 'Timer', 'format_time']
