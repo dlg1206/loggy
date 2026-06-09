@@ -179,7 +179,7 @@ import loggy
 try:
     raise RuntimeError("foobar")
 except RuntimeError as e:
-    loggy.error(str(e), exception=e)
+    loggy.error(e)
 ```
 
-<img src="assets/error_handle.png" alt="log when passing execption">
+<img src="assets/error_handle.png" alt="log when passing exception">

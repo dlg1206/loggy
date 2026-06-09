@@ -10,7 +10,7 @@ import inspect
 import sys
 from concurrent import futures
 from concurrent.futures import Future
-from typing import Any, Iterable, Dict, NoReturn, Coroutine
+from typing import Any, Iterable, Dict, NoReturn, Coroutine, overload
 
 from tqdm import tqdm
 
@@ -199,6 +199,15 @@ class Logger:
         """
         return self._emit(Level.DEBUG, Severity.INFO, msg, emit_details, None, details)
 
+    @overload
+    def debug_warn(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
+                   **details: Any) -> LogRecord:
+        ...
+
+    @overload
+    def debug_warn(self, exception: Exception, *, emit_details: bool = True, **details: Any) -> LogRecord:
+        ...
+
     def debug_warn(self,
                    msg: str,
                    *,
@@ -215,6 +224,15 @@ class Logger:
         :return: LogRecord
         """
         return self._emit(Level.DEBUG, Severity.WARN, msg, emit_details, exception, details)
+
+    @overload
+    def debug_error(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
+                    **details: Any) -> LogRecord:
+        ...
+
+    @overload
+    def debug_error(self, exception: Exception, *, emit_details: bool = True, **details: Any) -> LogRecord:
+        ...
 
     def debug_error(self,
                     msg: str,
@@ -247,6 +265,15 @@ class Logger:
         """
         return self._emit(Level.INFO, Severity.INFO, msg, emit_details, None, details)
 
+    @overload
+    def warn(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
+             **details: Any) -> LogRecord:
+        ...
+
+    @overload
+    def warn(self, exception: Exception, *, emit_details: bool = True, **details: Any) -> LogRecord:
+        ...
+
     def warn(self,
              msg: str,
              *,
@@ -264,8 +291,17 @@ class Logger:
         """
         return self._emit(Level.INFO, Severity.WARN, msg, emit_details, exception, details)
 
+    @overload
+    def error(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
+              **details: Any) -> LogRecord:
+        ...
+
+    @overload
+    def error(self, exception: Exception, *, emit_details: bool = True, **details: Any) -> LogRecord:
+        ...
+
     def error(self,
-              msg: str,
+              msg: str | Exception,
               *,
               exception: Exception | None = None,
               emit_details: bool = True,
@@ -273,13 +309,18 @@ class Logger:
         """
         Print error message
 
-        :param msg: Message to print
+        :param msg: Message or exception to print
         :param exception: Optional exception type to print (Default: None)
         :param emit_details: Include details when printing debug info (Default: True)
         :param details: Optional details for the log message
         :return: LogRecord
         """
-        return self._emit(Level.INFO, Severity.ERROR, msg, emit_details, exception, details)
+        if isinstance(msg, Exception):
+            actual_msg = str(msg)
+            exception = msg
+        else:
+            actual_msg = msg
+        return self._emit(Level.INFO, Severity.ERROR, actual_msg, emit_details, exception, details)
 
     #
     # Fatal wrapper
