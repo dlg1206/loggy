@@ -47,12 +47,19 @@ class Logger:
     Logger
     """
 
-    def __init__(self, log_level: Level | None = DEFAULT_LOG_LEVEL):
+    def __init__(self, log_level: Level | str | None = DEFAULT_LOG_LEVEL):
         """
         Create new logger
 
         :param log_level: Logging level (default: INFO)
+        :raises ValueError: If log_level is in valid
         """
+        if isinstance(log_level, str):
+            try:
+                log_level = Level[log_level.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid log level '{log_level}', must be one of {[l.name for l in Level]}")
+
         self._log_level = log_level
         self._suppress_depth = 0
 
@@ -87,13 +94,18 @@ class Logger:
 
         return log_record
 
-    def set_log_level(self, level: Level | None) -> None:
+    def set_log_level(self, level: Level | str | None) -> None:
         """
          Set log level, NONE to silence
 
          :param level: Logging level
          """
-        self._log_level = level
+        if isinstance(level, str):
+            try:
+                log_level = Level[level.upper()]
+            except KeyError:
+                raise ValueError(f"Invalid log level '{level}', must be one of {[l.name for l in Level]}")
+        self._log_level = log_level
 
     #
     # Pretty data queues
