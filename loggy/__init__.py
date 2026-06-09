@@ -5,8 +5,8 @@ Description: Public facing methods for loggy
 
 @author Derek Garcia
 """
-from _levels import Level
-from _logger import Logger
+from ._levels import Level
+from ._logger import Logger
 from .util import Timer, format_time
 
 _logger = Logger()
