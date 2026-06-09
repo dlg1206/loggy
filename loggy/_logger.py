@@ -21,6 +21,27 @@ DEFAULT_LOG_LEVEL = Level.INFO
 CALLER_FRAME_DISTANCE = 3
 
 
+class _DataQueue:
+    def __init__(self, logger: "Logger", iterable: Iterable[Any], is_root: bool):
+        """
+        Data wrapper for iterables
+
+        :param logger: Logger singleton
+        :param iterable: Iterable to wrap
+        :param is_root: If this is the root iterable
+        """
+        self._logger = logger
+        self._iterable = iterable
+        self._is_root = is_root
+
+    def __iter__(self):
+        try:
+            yield from self._iterable
+        finally:
+            if self._is_root:
+                self._logger._suppress_depth -= 1
+
+
 class Logger:
     """
     Logger
@@ -33,6 +54,7 @@ class Logger:
         :param log_level: Logging level (default: INFO)
         """
         self._log_level = log_level
+        self._suppress_depth = 0
 
     def _emit(self,
               level: Level,
@@ -76,59 +98,91 @@ class Logger:
     #
     # Pretty data queues
     #
-
-    def async_data_queue(self, data: Iterable[Coroutine], description: str, unit: str) -> Iterable[Any]:
+    def async_data_queue(self,
+                         data: Iterable[Coroutine],
+                         description: str,
+                         unit: str,
+                         suppress_logs: bool = False) -> _DataQueue:
         """
         Create a dynamic loading bar if in INFO mode for async tasks
 
         :param data: Iterable of to wrap with tqdm
         :param description: Description of the process
         :param unit: Unit of the process
+        :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
         :return: tqdm loading bar or awaited data
         """
         tasks = list(data)
         completed = asyncio.as_completed(tasks)
-        # early reject if not in correct mode
-        if self._log_level != Level.INFO:
-            return completed
 
-        # build formated loading bar
-        return tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(tasks))
+        # track if suppressing logs -- only if logger is in info mode
+        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
+        if is_root:
+            self._suppress_depth += 1
 
-    def threaded_data_queue(self, data: Iterable[Future], description: str, unit: str) -> Iterable[Any]:
+        # wrap in tqdm if correct mode
+        iterable = tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(tasks)) \
+            if self._log_level == Level.INFO \
+            else completed
+
+        return _DataQueue(self, iterable, is_root)
+
+    def threaded_data_queue(self,
+                            data: Iterable[Future],
+                            description: str,
+                            unit: str,
+                            suppress_logs: bool = False) -> Iterable[Any]:
         """
         Create a dynamic loading bar if in INFO mode for threaded tasks
 
         :param data: Iterable to wrap with tqdm
         :param description: Description of the process
         :param unit: Unit of the process
+        :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
         :return: tqdm loading bar or completed data
         """
         futures_list = list(data)
         completed = futures.as_completed(futures_list)
 
-        # early reject if not in correct mode
-        if self._log_level is None or self._log_level != Level.INFO:
-            return completed
+        # track if suppressing logs -- only if logger is in info mode
+        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
+        if is_root:
+            self._suppress_depth += 1
 
-        # build formated loading bar
-        return tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(futures_list))
+        # wrap in tqdm if correct mode
+        iterable = tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout,
+                        total=len(futures_list)) \
+            if self._log_level == Level.INFO \
+            else completed
 
-    def manual_data_queue(self, total: int, description: str, unit: str) -> tqdm | None:
+        return _DataQueue(self, iterable, is_root)
+
+    def manual_data_queue(self,
+                          total: int,
+                          description: str,
+                          unit: str,
+                          suppress_logs: bool = False) -> _DataQueue | None:
         """
         Create a dynamic loading bar if in INFO mode that can be manually updated with .update(N)
 
         :param total: Total length to wrap with tqdm
         :param description: Description of the process
         :param unit: Unit of the process
+        :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
         :return: tqdm loading bar or None if not in INFO mode
         """
-        # early reject if not in correct mode
-        if self._log_level != Level.INFO:
-            return None
 
-        # build formated loading bar
-        return tqdm(total=total, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout)
+        # track if suppressing logs -- only if logger is in info mode
+        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
+        if is_root:
+            self._suppress_depth += 1
+
+        # wrap in tqdm if correct mode
+        iterable = tqdm(desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=total) \
+            if self._log_level == Level.INFO \
+            else None
+
+        return _DataQueue(self, iterable, is_root) if iterable else None
 
     #
     # Wrapper debug log methods
