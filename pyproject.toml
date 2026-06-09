@@ -19,7 +19,7 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["loggy"]
+packages = ["loggy", "loggy.util"]
 
 [tool.pylint.main]
 fail-under = 6
