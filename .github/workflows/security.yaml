@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Scan using grype
-        uses: anchore/scan-action
+        uses: anchore/scan-action@v7.4.0
         with:
           path: "."
           by-cve: true
