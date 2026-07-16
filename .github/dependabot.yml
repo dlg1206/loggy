@@ -7,13 +7,16 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore(deps)"
+    open-pull-requests-limit: 10
     groups:
-      all-dependencies:
+      all:
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
+      # ignore major deps
+      ignore:
+        - dependency-name: "*"
+          update-types:
+            - "version-update:semver-major"
