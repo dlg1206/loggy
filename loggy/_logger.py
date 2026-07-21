@@ -221,7 +221,7 @@ class Logger:
         ...
 
     def debug_warn(self,
-                   msg: str,
+                   msg: str | Exception,
                    *,
                    exception: Exception | None = None,
                    emit_details: bool = True,
@@ -235,7 +235,12 @@ class Logger:
         :param details: Optional details for the log message
         :return: LogRecord
         """
-        return self._emit(Level.DEBUG, Severity.WARN, msg, emit_details, exception, details)
+        if isinstance(msg, Exception):
+            actual_msg = str(msg)
+            exception = msg
+        else:
+            actual_msg = msg
+        return self._emit(Level.DEBUG, Severity.WARN, actual_msg, emit_details, exception, details)
 
     @overload
     def debug_error(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
@@ -247,7 +252,7 @@ class Logger:
         ...
 
     def debug_error(self,
-                    msg: str,
+                    msg: str | Exception,
                     *,
                     exception: Exception | None = None,
                     emit_details: bool = True,
@@ -261,7 +266,12 @@ class Logger:
         :param details: Optional details for the log message
         :return: LogRecord
         """
-        return self._emit(Level.DEBUG, Severity.ERROR, msg, emit_details, exception, details)
+        if isinstance(msg, Exception):
+            actual_msg = str(msg)
+            exception = msg
+        else:
+            actual_msg = msg
+        return self._emit(Level.DEBUG, Severity.ERROR, actual_msg, emit_details, exception, details)
 
     #
     # Wrapper info log methods
@@ -287,7 +297,7 @@ class Logger:
         ...
 
     def warn(self,
-             msg: str,
+             msg: str | Exception,
              *,
              exception: Exception | None = None,
              emit_details: bool = True,
@@ -301,7 +311,12 @@ class Logger:
         :param details: Optional details for the log message
         :return: LogRecord
         """
-        return self._emit(Level.INFO, Severity.WARN, msg, emit_details, exception, details)
+        if isinstance(msg, Exception):
+            actual_msg = str(msg)
+            exception = msg
+        else:
+            actual_msg = msg
+        return self._emit(Level.INFO, Severity.WARN, actual_msg, emit_details, exception, details)
 
     @overload
     def error(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
