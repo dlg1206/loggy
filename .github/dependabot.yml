@@ -16,11 +16,11 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      # ignore major deps
-      ignore:
-        - dependency-name: "*"
-          update-types:
-            - "version-update:semver-major"
+    # ignore major deps
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   # CI
   - package-ecosystem: "github-actions"
