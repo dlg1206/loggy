@@ -101,18 +101,11 @@ class Logger:
          :param level: Logging level
          """
         if level is None:
-            log_level = Level.NONE
+            self._log_level = Level.NONE
         elif isinstance(level, str):
-            try:
-                log_level = Level[level.upper()]
-            except KeyError:
-                raise ValueError(
-                    f"Invalid log level '{level}', must be one of {[l.name for l in Level]}"
-                ) from None
+            self._log_level = Level.from_string(level)
         else:
-            log_level = level
-
-        self._log_level = log_level
+            self._log_level = level
 
     #
     # Pretty data queues

@@ -26,6 +26,35 @@ class Level(IntEnum):
     DEBUG = 1
     INFO = 2
 
+    @classmethod
+    def from_string(cls, value: str) -> Level:
+        """
+        Create level from string value
+
+        :param value: String name of log level
+        :return: :class:`Level`
+        :raises ValueError: If value is not a valid level
+        """
+        try:
+            return cls[value.upper()]
+        except KeyError:
+            raise ValueError(
+                f"Invalid log level '{value}', must be one of {cls.names()}"
+            ) from None
+
+    @classmethod
+    def names(cls) -> list[str]:
+        """
+        :return: List of names of available levels
+        """
+        return [member.name.lower() for member in cls]
+
+    def __str__(self) -> str:
+        """
+        :return: Name of level
+        """
+        return self.name.lower()
+
 
 class Severity(IntEnum):
     """

@@ -26,7 +26,21 @@ or add to `requirements.txt`
 loggy @ git+https://github.com/dlg1206/loggy.git
 ```
 
-## Basic Usage
+## Overview
+
+**Logging Modes**
+
+- [Info](#info-mode)
+- [Debug](#debug-mode)
+- [Silent](#silent-mode)
+- [Fatal](#fatal)
+
+**Features**
+
+- [tqdm Progress Bars](#async--threaded--manual-loading-bars)
+- [Additional Logging Details](#additional-details)
+- [Exception Logging](#exceptions)
+- [Argparse](#argparse-support)
 
 ### `INFO` mode
 
@@ -183,3 +197,20 @@ except RuntimeError as e:
 ```
 
 <img src="assets/error_handle.png" alt="log when passing exception">
+
+### Argparse Support
+
+> Add to `argparse` command directly into `type` and `choices`
+
+```python
+import argparse
+from loggy import Level
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--log-level",
+    type=Level.from_string,
+    choices=list(Level),
+    # other args ...
+)
+```
