@@ -89,7 +89,7 @@ class Logger:
             return log_record
 
         # else print if logger not silenced
-        if self._log_level is not None and level >= self._log_level:
+        if self._log_level is not Level.NONE and level >= self._log_level:
             print(log_record.format(emit_details))
 
         return log_record
@@ -100,11 +100,18 @@ class Logger:
 
          :param level: Logging level
          """
-        if isinstance(level, str):
+        if level is None:
+            log_level = Level.NONE
+        elif isinstance(level, str):
             try:
                 log_level = Level[level.upper()]
             except KeyError:
-                raise ValueError(f"Invalid log level '{level}', must be one of {[l.name for l in Level]}")
+                raise ValueError(
+                    f"Invalid log level '{level}', must be one of {[l.name for l in Level]}"
+                ) from None
+        else:
+            log_level = level
+
         self._log_level = log_level
 
     #

@@ -22,6 +22,7 @@ class Level(IntEnum):
     """
     Logging level
     """
+    NONE = 0
     DEBUG = 1
     INFO = 2
 
