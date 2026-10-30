@@ -7,10 +7,11 @@ Description: Logger for actions
 
 import asyncio
 import inspect
+import os
 import sys
 from concurrent import futures
 from concurrent.futures import Future
-from typing import Any, Iterable, Dict, NoReturn, Coroutine, overload
+from typing import Any, Iterable, Dict, NoReturn, Coroutine, overload, TextIO
 
 from tqdm import tqdm
 
@@ -47,21 +48,35 @@ class Logger:
     Logger
     """
 
-    def __init__(self, log_level: Level | str | None = DEFAULT_LOG_LEVEL):
+    def __init__(self, log_level: Level = DEFAULT_LOG_LEVEL, stream: TextIO | None = None, force_color: bool = False):
         """
         Create new logger
 
-        :param log_level: Logging level (default: INFO)
+        :param log_level: Logging level (Default: INFO)
+        :param stream: Optional output stream (Default: stdout)
+        :param force_color: Force color output instead of using stream to determine (Default: False)
         :raises ValueError: If log_level is in valid
         """
-        if isinstance(log_level, str):
-            try:
-                log_level = Level[log_level.upper()]
-            except KeyError:
-                raise ValueError(f"Invalid log level '{log_level}', must be one of {[l.name for l in Level]}")
-
         self._log_level = log_level
         self._suppress_depth = 0
+        self._stream = stream or sys.stdout  # default stdout
+        self._supports_color = force_color or self._detect_color(self._stream)
+
+    @staticmethod
+    def _detect_color(stream: TextIO) -> bool:
+        """
+        Check if the terminal output supports color
+
+        :param stream: Output stream writing to
+        :return: True if color, false otherwise
+        """
+        if os.environ.get("NO_COLOR"):
+            return False
+        if os.environ.get("FORCE_COLOR"):
+            return True
+        if os.environ.get("TERM") == "dumb":
+            return False
+        return hasattr(stream, "isatty") and stream.isatty()
 
     def _emit(self,
               level: Level,
@@ -82,15 +97,11 @@ class Logger:
         :return: Log record
         """
         log_record = LogRecord(level, severity, msg, caller=_resolve_caller(), exception=exception, details=details)
+        msg = log_record.format(emit_details, use_color=self._supports_color)
 
-        # always print fatal
-        if level == Severity.FATAL:
-            print(log_record.format(emit_details))
-            return log_record
-
-        # else print if logger not silenced
-        if self._log_level is not Level.NONE and level >= self._log_level:
-            print(log_record.format(emit_details))
+        # always print fatal or print if logger not silenced
+        if level == Severity.FATAL or (self._log_level is not Level.NONE and level >= self._log_level):
+            print(msg, file=self._stream)
 
         return log_record
 
@@ -106,6 +117,25 @@ class Logger:
             self._log_level = Level.from_string(level)
         else:
             self._log_level = level
+
+    def set_output_stream(self, stream: TextIO, force_color: bool = False) -> None:
+        """
+        Set the logging output stream
+
+        :param stream: Output stream
+        :param force_color: Force color output instead of using stream to determine (Default: False)
+        :return:
+        """
+        self._stream = stream
+        self._supports_color = force_color or self._detect_color(self._stream)
+
+    def set_force_color(self, forced: bool) -> None:
+        """
+        Force color output
+
+        :param forced: True if force color, False otherwise
+        """
+        self._supports_color = forced
 
     #
     # Pretty data queues
@@ -133,9 +163,11 @@ class Logger:
             self._suppress_depth += 1
 
         # wrap in tqdm if correct mode
-        iterable = tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(tasks)) \
-            if self._log_level == Level.INFO \
-            else completed
+        if self._log_level == Level.INFO:
+            iterable = tqdm(completed,
+                            desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(tasks))
+        else:
+            iterable = completed
 
         return _DataQueue(self, iterable, is_root)
 
@@ -162,10 +194,11 @@ class Logger:
             self._suppress_depth += 1
 
         # wrap in tqdm if correct mode
-        iterable = tqdm(completed, desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout,
-                        total=len(futures_list)) \
-            if self._log_level == Level.INFO \
-            else completed
+        if self._log_level == Level.INFO:
+            iterable = tqdm(completed,
+                            desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(futures_list))
+        else:
+            iterable = completed
 
         return _DataQueue(self, iterable, is_root)
 

@@ -8,14 +8,14 @@ Description: Logging levels available
 from enum import IntEnum
 
 # ansi color codes
-CLEAR = '\033[00m'
-RED = '\033[91m'
-YELLOW = '\033[93m'
-WHITE = '\033[97m'
-WHITE_ON_CYAN = '\033[46;97m'
-YELLOW_ON_CYAN = '\033[46;93m'
-RED_ON_CYAN = '\033[46;91m'
-WHITE_ON_RED = '\033[41;97m'
+CLEAR = '\033[0m'
+DIM = '\033[2m'
+BOLD = '\033[1m'
+
+RED = '\033[31m'
+YELLOW = '\033[33m'
+CYAN = '\033[36m'
+WHITE_ON_RED = '\033[1;97;41m'
 
 
 class Level(IntEnum):
@@ -66,11 +66,24 @@ class Severity(IntEnum):
     FATAL = 3
 
 
-COLORS = {
-    (Level.DEBUG, Severity.INFO): WHITE_ON_CYAN,
-    (Level.DEBUG, Severity.WARN): YELLOW_ON_CYAN,
-    (Level.DEBUG, Severity.ERROR): RED_ON_CYAN,
-    (Level.INFO, Severity.INFO): WHITE,
+_COLORS = {
+    (Level.DEBUG, Severity.INFO): DIM + CYAN,
+    (Level.DEBUG, Severity.WARN): DIM + YELLOW,
+    (Level.DEBUG, Severity.ERROR): DIM + RED,
+    (Level.INFO, Severity.INFO): '',  # terminal default
     (Level.INFO, Severity.WARN): YELLOW,
-    (Level.INFO, Severity.ERROR): RED,
+    (Level.INFO, Severity.ERROR): BOLD + RED,
 }
+
+
+def map_color(level: Level, severity: Severity) -> str:
+    """
+    Map the level and severity to color
+
+    :param level: Logging level
+    :param severity: Severity level
+    :return: Starting color code for the level and severity paring
+    """
+    if severity == Severity.FATAL:
+        return WHITE_ON_RED
+    return _COLORS.get((level, severity), '')

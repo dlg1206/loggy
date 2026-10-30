@@ -12,6 +12,8 @@ from .util import Timer, format_time
 _logger = Logger()
 
 set_log_level = _logger.set_log_level
+set_output_stream = _logger.set_output_stream
+set_force_color = _logger.set_force_color
 
 debug_info = _logger.debug_info
 debug_warn = _logger.debug_warn
