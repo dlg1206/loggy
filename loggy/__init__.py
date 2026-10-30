@@ -5,8 +5,6 @@ Description: Public facing methods for loggy
 
 @author Derek Garcia
 """
-from datetime import timezone
-from functools import partial
 
 from ._levels import Level
 from ._logger import Logger, DEFAULT_LOG_LEVEL
@@ -15,6 +13,7 @@ from .util import Timer, format_time
 _logger = Logger()
 
 set_log_level = _logger.set_log_level
+set_log_file = _logger.set_log_file
 set_tz = _logger.set_tz
 set_output_stream = _logger.set_output_stream
 set_force_color = _logger.set_force_color

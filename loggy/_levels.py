@@ -27,7 +27,7 @@ class Level(IntEnum):
     INFO = 2
 
     @classmethod
-    def from_string(cls, value: str) -> Level:
+    def from_string(cls, value: str) -> "Level":
         """
         Create level from string value
 

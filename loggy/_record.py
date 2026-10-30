@@ -5,6 +5,7 @@ Description: Factory for producing standardized log messages
 
 @author Derek Garcia
 """
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, tzinfo
 from typing import Dict, Any
@@ -73,6 +74,25 @@ class LogRecord:
 
         # format the final message
         return " | ".join(parts)
+
+    def to_csv(self) -> tuple[str, str, str, str, str | None, str | None]:
+        """
+        Convert this record to CSV row
+        (timestamp, level, severity, message, exception, details)
+
+        :return: CSV row
+        """
+        msg = self.msg
+        if self.exception and not msg:
+            msg = str(self.exception)
+        return (
+            self.timestamp.isoformat(timespec="milliseconds"),
+            self.level.name,
+            self.severity.name,
+            msg,
+            type(self.exception).__name__ if self.exception else None,
+            json.dumps(self.details, default=repr, ensure_ascii=False, separators=(",", ":")) if self.details else None
+        )
 
 
 def _fmt_value(v: Any) -> str:

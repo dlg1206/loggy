@@ -6,6 +6,7 @@ Description: Logger for actions
 """
 
 import asyncio
+import csv
 import inspect
 import os
 import sys
@@ -51,6 +52,7 @@ class Logger:
 
     def __init__(self,
                  log_level: Level = DEFAULT_LOG_LEVEL,
+                 log_file: str | None = None,
                  tz: tzinfo | None = None,
                  stream: TextIO | None = None,
                  force_color: bool = False):
@@ -65,9 +67,15 @@ class Logger:
         """
         self._log_level = log_level
         self._suppress_depth = 0
+        self._log_file = log_file
         self._tz = tz
         self._stream = stream or sys.stdout  # default stdout
         self._supports_color = force_color or self._detect_color(self._stream)
+
+        # init log file
+        if self._log_file:
+            with open(self._log_file, 'w', encoding="utf-8") as f:
+                csv.writer(f).writerow(('timestamp', 'level', 'severity', 'message', 'exception', 'details'))
 
     @staticmethod
     def _detect_color(stream: TextIO) -> bool:
@@ -111,6 +119,11 @@ class Logger:
         if level == Severity.FATAL or (self._log_level is not Level.NONE and level >= self._log_level):
             print(msg, file=self._stream)
 
+        # save to log file
+        if self._log_file:
+            with open(self._log_file, 'a', encoding="utf-8") as f:
+                csv.writer(f).writerow(log_record.to_csv())
+
         return log_record
 
     def set_log_level(self, level: Level | str | None) -> None:
@@ -125,6 +138,16 @@ class Logger:
             self._log_level = Level.from_string(level)
         else:
             self._log_level = level
+
+    def set_log_file(self, log_file: str) -> None:
+        """
+        Set path to save logs to
+
+        :param log_file: Path to log file
+        """
+        self._log_file = log_file
+        with open(self._log_file, 'w', encoding="utf-8") as f:
+            csv.writer(f).writerow(('timestamp', 'level', 'severity', 'message', 'exception', 'details'))
 
     def set_tz(self, tz: tzinfo) -> None:
         """
