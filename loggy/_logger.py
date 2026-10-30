@@ -353,11 +353,22 @@ class Logger:
     # Fatal wrapper
     #
 
+    @overload
+    def fatal(self, msg: str, *, exception: Exception | None = None, emit_details: bool = True,
+              exit_code: int = 1, **details: Any) -> LogRecord:
+        ...
+
+    @overload
+    def fatal(self, exception: Exception, *, emit_details: bool = True, exit_code: int = 1,
+              **details: Any) -> LogRecord:
+        ...
+
     def fatal(self,
-              msg: str,
+              msg: str | Exception,
               *,
               exception: Exception | None = None,
               emit_details: bool = True,
+              exit_code: int = 1,
               **details: Any) -> NoReturn:
         """
         Report fail message and exit 1
@@ -365,10 +376,16 @@ class Logger:
         :param msg: Message to print
         :param exception: Optional exception type to print (Default: None)
         :param emit_details: Include details when printing debug info (Default: True)
+        :param exit_code: Optional custom exit code (Default: 1)
         :param details: Optional details for the log message
         """
-        self._emit(Level.INFO, Severity.FATAL, msg, emit_details, exception, details)
-        sys.exit(1)
+        if isinstance(msg, Exception):
+            actual_msg = str(msg)
+            exception = msg
+        else:
+            actual_msg = msg
+        self._emit(Level.INFO, Severity.FATAL, actual_msg, emit_details, exception, details)
+        sys.exit(exit_code)
 
 
 def _make_tqdm_desc(description: str) -> str:

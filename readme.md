@@ -107,6 +107,14 @@ print("bar")
 
 <img src="assets/fatal_log.png" alt="terminal output of fatal">
 
+Default exit code is `1` but can be set with `exit_code`
+
+```python
+import loggy
+
+loggy.fatal("goodbye", exit_code=127)
+```
+
 ### Async / Threaded / Manual Loading Bars
 
 > Concept is the same with async, just replace futures with coroutines
