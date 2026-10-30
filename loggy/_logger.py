@@ -11,12 +11,13 @@ import os
 import sys
 from concurrent import futures
 from concurrent.futures import Future
+from datetime import tzinfo
 from typing import Any, Iterable, Dict, NoReturn, Coroutine, overload, TextIO
 
 from tqdm import tqdm
 
 from loggy._levels import Level, Severity
-from loggy._record import LogRecord
+from loggy._record import LogRecord, now
 
 DEFAULT_LOG_LEVEL = Level.INFO
 CALLER_FRAME_DISTANCE = 3
@@ -48,17 +49,23 @@ class Logger:
     Logger
     """
 
-    def __init__(self, log_level: Level = DEFAULT_LOG_LEVEL, stream: TextIO | None = None, force_color: bool = False):
+    def __init__(self,
+                 log_level: Level = DEFAULT_LOG_LEVEL,
+                 tz: tzinfo | None = None,
+                 stream: TextIO | None = None,
+                 force_color: bool = False):
         """
         Create new logger
 
         :param log_level: Logging level (Default: INFO)
+        :param tz: Optional timezone for timestamps (Default: device tz)
         :param stream: Optional output stream (Default: stdout)
         :param force_color: Force color output instead of using stream to determine (Default: False)
         :raises ValueError: If log_level is in valid
         """
         self._log_level = log_level
         self._suppress_depth = 0
+        self._tz = tz
         self._stream = stream or sys.stdout  # default stdout
         self._supports_color = force_color or self._detect_color(self._stream)
 
@@ -96,7 +103,8 @@ class Logger:
         :param details: Optional details for the log message (Default: None)
         :return: Log record
         """
-        log_record = LogRecord(level, severity, msg, caller=_resolve_caller(), exception=exception, details=details)
+        log_record = LogRecord(level, severity, msg,
+                               caller=_resolve_caller(), exception=exception, details=details, timestamp=now(self._tz))
         msg = log_record.format(emit_details, use_color=self._supports_color)
 
         # always print fatal or print if logger not silenced
@@ -117,6 +125,14 @@ class Logger:
             self._log_level = Level.from_string(level)
         else:
             self._log_level = level
+
+    def set_tz(self, tz: tzinfo) -> None:
+        """
+        Set logging timezone
+
+        :param tz: Timezone for logging
+        """
+        self._tz = tz
 
     def set_output_stream(self, stream: TextIO, force_color: bool = False) -> None:
         """

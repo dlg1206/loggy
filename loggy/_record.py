@@ -6,12 +6,22 @@ Description: Factory for producing standardized log messages
 @author Derek Garcia
 """
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, tzinfo
 from typing import Dict, Any
 
 from loggy._levels import Level, Severity, CLEAR, map_color
 
 _SEVERITY_WIDTH = max(len(s.name) for s in Severity)
+
+
+def now(tz: tzinfo | None = None) -> datetime:
+    """
+    Get the current time
+
+    :param tz: Timezone for the timestamp, device-local timezone if tz is None
+    :return: Current timestamp
+    """
+    return datetime.now(tz).astimezone() if tz is None else datetime.now(tz)
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,7 +32,7 @@ class LogRecord:
     level: Level
     severity: Severity
     msg: str
-    timestamp: datetime = field(default_factory=datetime.now)
+    timestamp: datetime = field(default_factory=now)
     caller: str | None = None
     exception: Exception | None = None
     details: Dict[str, Any] | None = None
