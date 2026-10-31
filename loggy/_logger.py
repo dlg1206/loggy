@@ -206,7 +206,7 @@ class Logger:
         # wrap in tqdm if correct mode
         if self._log_level == Level.INFO:
             iterable = tqdm(completed,
-                            desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(tasks))
+                            desc=_make_tqdm_desc(description, self._tz), unit=unit, file=sys.stdout, total=len(tasks))
         else:
             iterable = completed
 
@@ -237,7 +237,8 @@ class Logger:
         # wrap in tqdm if correct mode
         if self._log_level == Level.INFO:
             iterable = tqdm(completed,
-                            desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=len(futures_list))
+                            desc=_make_tqdm_desc(description, self._tz),
+                            unit=unit, file=sys.stdout, total=len(futures_list))
         else:
             iterable = completed
 
@@ -264,9 +265,11 @@ class Logger:
             self._suppress_depth += 1
 
         # wrap in tqdm if correct mode
-        iterable = tqdm(desc=_make_tqdm_desc(description), unit=unit, file=sys.stdout, total=total) \
-            if self._log_level == Level.INFO \
-            else None
+        if self._log_level == Level.INFO:
+            iterable = tqdm(desc=_make_tqdm_desc(description, self._tz),
+                            unit=unit, file=sys.stdout, total=total)
+        else:
+            iterable = None
 
         return _DataQueue(self, iterable, is_root) if iterable else None
 
@@ -462,15 +465,16 @@ class Logger:
         sys.exit(exit_code)
 
 
-def _make_tqdm_desc(description: str) -> str:
+def _make_tqdm_desc(description: str, tz: tzinfo | None) -> str:
     """
     Create the standard tqdm description
 
     :param description: Text description of process
+    :param tz: Timezone for timestamp
     :return: Full formatted description
     """
-    log_record = LogRecord(Level.INFO, Severity.INFO, description, caller=_resolve_caller())
-    return log_record.format(False)
+    log_record = LogRecord(Level.INFO, Severity.INFO, description, caller=_resolve_caller(), timestamp=now(tz))
+    return log_record.format(include_details=False)
 
 
 def _resolve_caller(caller_frame_distance: int = CALLER_FRAME_DISTANCE) -> str | None:
