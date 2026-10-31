@@ -1,5 +1,5 @@
 <h1>
-    <img alt="spiffy dog" src="assets/loggy.png" width="100">
+    <img alt="loggy froggy" src="assets/loggy.png" width="100">
     Loggy
 </h1>
 
@@ -10,8 +10,8 @@
 ## Features
 
 - `INFO`, `DEBUG`, or automatic silent mode
-- `tqdm` loading bar support for async, threaded, or manual increments
-- Record objects for storing logs
+- `tqdm` loading bar support for sync, async, threaded, or manual increments
+- Write to log file
 - Misc. util objects like timers
 
 ## Installation
@@ -41,6 +41,7 @@ loggy @ git+https://github.com/dlg1206/loggy.git
 - [Additional Logging Details](#additional-details)
 - [Exception Logging](#exceptions)
 - [Argparse](#argparse-support)
+- [Config](#loggy-configs)
 
 ### `INFO` mode
 
@@ -60,7 +61,7 @@ loggy.error("Hello")
 import loggy
 from loggy import Level
 
-loggy.set_log_level(Level.DEBUG)
+loggy.set_log_level(Level.DEBUG)  # or "debug"
 
 loggy.debug_info("Hello")
 loggy.debug_warn("Hello")
@@ -79,7 +80,7 @@ loggy.error("Hello")
 ```python
 import loggy
 
-loggy.set_log_level(None)
+loggy.set_log_level(None)  # "or Level.NONE or "none"
 
 print("foo")
 loggy.debug_info("Hello")
@@ -95,7 +96,7 @@ print("bar")
 
 ### `Fatal`
 
-> Program immediately exits with a non-zero code
+> Program immediately exits with a non-zero code. Will print even if debug is set to silent.
 
 ```python
 import loggy
@@ -105,19 +106,23 @@ loggy.fatal("goodbye")
 print("bar")
 ```
 
-<img src="assets/fatal_log.png" alt="terminal output of fatal">
+<img src="assets/fatal_log_1.png" alt="terminal output of fatal">
 
-Default exit code is `1` but can be set with `exit_code`
+Default exit code is `1` but can be set with `exit_code`:
 
 ```python
 import loggy
 
+print("foo")
 loggy.fatal("goodbye", exit_code=127)
+print("bar")
 ```
 
-### Async / Threaded / Manual Loading Bars
+<img src="assets/fatal_log_2.png" alt="terminal output of fatal">
 
-> Concept is the same with async, just replace futures with coroutines
+### Threaded / Async / Manual Loading Bars
+
+> Integrated `tqdm` loading bars with loggy messages
 
 #### `INFO` Mode
 
@@ -127,15 +132,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 import loggy
 
-
 def sleep() -> str:
     time.sleep(1)
     return "Awake!"
 
-
 with ThreadPoolExecutor() as exe:
     futures = [exe.submit(sleep) for _ in range(3)]
-
     for f in loggy.threaded_data_queue(futures, description="sleeping", unit="zzz"):
         result = f.result()
         # do extra processing here
@@ -144,7 +146,66 @@ with ThreadPoolExecutor() as exe:
 loggy.info("Done!")
 ```
 
-<img src="assets/data_queue_info.png" alt="terminal info loading bar">
+```python
+import asyncio
+
+import loggy
+
+async def sleep() -> str:
+    await asyncio.sleep(1)
+    return "Awake!"
+
+async def main():
+    futures = [asyncio.create_task(sleep()) for _ in range(3)]
+    for f in loggy.async_data_queue(futures, description="sleeping", unit="zzz"):
+        result = await f
+        # do extra processing here
+        loggy.debug_info(result)
+    loggy.info("Done!")
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
+<img src="assets/data_queue_info_auto_1.png" alt="terminal info loading bar">
+
+```python
+import time
+
+import loggy
+
+def sleep() -> str:
+    time.sleep(1)
+    return "Awake!"
+
+for _ in loggy.data_queue(range(3), description="sleeping", unit="zzz"):
+    result = sleep()
+    loggy.debug_info(result)
+
+loggy.info("Done!")
+```
+
+```python
+import time
+
+import loggy
+
+def sleep() -> str:
+    time.sleep(1)
+    return "Awake!"
+
+bar = loggy.progress_bar(3, description="sleeping", unit="zzz")
+for _ in range(3):
+    result = sleep()
+    loggy.debug_info(result)
+    bar.update(1)
+bar.close()
+
+loggy.info("Done!")
+```
+
+<img src="assets/data_queue_info_manual.png" alt="terminal info loading bar">
 
 #### `DEBUG` Mode
 
@@ -157,15 +218,12 @@ from loggy import Level
 
 loggy.set_log_level(Level.DEBUG)  # <-- Set mode to debug
 
-
 def sleep() -> str:
     time.sleep(1)
     return "Awake!"
 
-
 with ThreadPoolExecutor() as exe:
     futures = [exe.submit(sleep) for _ in range(3)]
-
     for f in loggy.threaded_data_queue(futures, description="sleeping", unit="zzz"):
         result = f.result()
         # do extra processing here
@@ -174,7 +232,72 @@ with ThreadPoolExecutor() as exe:
 loggy.info("Done!")
 ```
 
-<img src="assets/data_queue_debug.png" alt="terminal debug loading bar">
+```python
+import asyncio
+
+import loggy
+from loggy import Level
+
+loggy.set_log_level(Level.DEBUG)  # <-- Set mode to debug
+
+async def sleep() -> str:
+    await asyncio.sleep(1)
+    return "Awake!"
+
+async def main():
+    futures = [asyncio.create_task(sleep()) for _ in range(3)]
+    for f in loggy.async_data_queue(futures, description="sleeping", unit="zzz"):
+        result = await f
+        # do extra processing here
+        loggy.debug_info(result)
+    loggy.info("Done!")
+
+if __name__ == '__main__':
+    asyncio.run(main())
+```
+
+```python
+import time
+
+import loggy
+from loggy import Level
+
+loggy.set_log_level(Level.DEBUG)  # <-- Set mode to debug
+
+def sleep() -> str:
+    time.sleep(1)
+    return "Awake!"
+
+for _ in loggy.data_queue(range(3), description="sleeping", unit="zzz"):
+    result = sleep()
+    loggy.debug_info(result)
+
+loggy.info("Done!")
+```
+
+```python
+import time
+
+import loggy
+from loggy import Level
+
+loggy.set_log_level(Level.DEBUG)  # <-- Set mode to debug
+
+def sleep() -> str:
+    time.sleep(1)
+    return "Awake!"
+
+bar = loggy.progress_bar(3, description="sleeping", unit="zzz")
+for _ in range(3):
+    result = sleep()
+    loggy.debug_info(result)
+    bar.update(1)
+bar.close()
+
+loggy.info("Done!")
+```
+
+<img src="assets/data_queue_debug_auto.png" alt="terminal debug loading bar">
 
 ### Additional Details
 
@@ -221,4 +344,16 @@ parser.add_argument(
     choices=list(Level),
     # other args ...
 )
+```
+
+### Loggy Configs
+
+```python
+import loggy
+
+loggy.set_log_level()       # set the logging level
+loggy.set_log_file()        # path to save logs to
+loggy.set_tz()              # set timezone for log timestamps
+loggy.set_output_stream()   # set the output stream
+loggy.set_force_color()     # force ansi color codes to be used
 ```
