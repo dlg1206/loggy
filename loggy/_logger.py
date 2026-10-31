@@ -113,16 +113,18 @@ class Logger:
         """
         log_record = LogRecord(level, severity, msg,
                                caller=_resolve_caller(), exception=exception, details=details, timestamp=now(self._tz))
-        msg = log_record.format(emit_details, use_color=self._supports_color)
-
-        # always print fatal or print if logger not silenced
-        if level == Severity.FATAL or (self._log_level is not Level.NONE and level >= self._log_level):
-            print(msg, file=self._stream)
 
         # save to log file
         if self._log_file:
             with open(self._log_file, 'a', encoding="utf-8") as f:
                 csv.writer(f).writerow(log_record.to_csv())
+
+        # always print fatal or print if logger not silenced
+        if severity == Severity.FATAL or (
+                self._log_level != Level.NONE and level >= self._log_level
+        ):
+            msg = log_record.format(emit_details, use_color=self._supports_color)
+            print(msg, file=self._stream)
 
         return log_record
 
