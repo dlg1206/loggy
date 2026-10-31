@@ -128,6 +128,39 @@ class Logger:
 
         return log_record
 
+    def _create_tqdm(self,
+                     total: int,
+                     description: str,
+                     unit: str,
+                     data: Iterable[Any] | None = None,
+                     suppress_logs: bool = False) -> _DataQueue | tqdm:
+        """
+        Create a standardized tqdm progress bar
+
+        :param total: Total units of work
+        :param description: Description of the process
+        :param unit: Unit of the process
+        :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
+        :param data: Optional iterable of to wrap with tqdm (Default: None)
+        :return: tqdm loading bar
+        """
+        show = self._log_level == Level.INFO
+        desc = LogRecord(Level.INFO, Severity.INFO, description,
+                         caller=_resolve_caller(),
+                         timestamp=now(self._tz)).format(False)
+
+        is_root = suppress_logs and show and self._suppress_depth == 0
+        # wrap data in tqdm
+        if data is not None:
+            bar = tqdm(data, total=total, desc=desc, unit=unit, file=self._stream, disable=not show)
+            if is_root:
+                self._suppress_depth += 1
+            return _DataQueue(self, bar, is_root)
+
+        # manual bars: don't touch _suppress_depth unless a wrapper releases it
+        bar = tqdm(total=total, desc=desc, unit=unit, file=self._stream, disable=not show)
+        return bar
+
     def set_log_level(self, level: Level | str | None) -> None:
         """
          Set log level, NONE to silence
@@ -197,20 +230,11 @@ class Logger:
         """
         tasks = list(data)
         completed = asyncio.as_completed(tasks)
-
-        # track if suppressing logs -- only if logger is in info mode
-        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
-        if is_root:
-            self._suppress_depth += 1
-
-        # wrap in tqdm if correct mode
-        if self._log_level == Level.INFO:
-            iterable = tqdm(completed,
-                            desc=_make_tqdm_desc(description, self._tz), unit=unit, file=sys.stdout, total=len(tasks))
-        else:
-            iterable = completed
-
-        return _DataQueue(self, iterable, is_root)
+        bar = self._create_tqdm(len(tasks), description, unit, completed, suppress_logs)
+        if not isinstance(bar, _DataQueue):
+            # should not reach here
+            raise RuntimeError("Expected DataQueue got tqdm")
+        return bar
 
     def threaded_data_queue(self,
                             data: Iterable[Future],
@@ -229,28 +253,40 @@ class Logger:
         futures_list = list(data)
         completed = futures.as_completed(futures_list)
 
-        # track if suppressing logs -- only if logger is in info mode
-        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
-        if is_root:
-            self._suppress_depth += 1
+        bar = self._create_tqdm(len(futures_list), description, unit, completed, suppress_logs)
+        if not isinstance(bar, _DataQueue):
+            # should not reach here
+            raise RuntimeError("Expected DataQueue got tqdm")
+        return bar
 
-        # wrap in tqdm if correct mode
-        if self._log_level == Level.INFO:
-            iterable = tqdm(completed,
-                            desc=_make_tqdm_desc(description, self._tz),
-                            unit=unit, file=sys.stdout, total=len(futures_list))
-        else:
-            iterable = completed
-
-        return _DataQueue(self, iterable, is_root)
-
-    def manual_data_queue(self,
-                          total: int,
-                          description: str,
-                          unit: str,
-                          suppress_logs: bool = False) -> _DataQueue | None:
+    def data_queue(self,
+                   data: Iterable[Any],
+                   description: str,
+                   unit: str,
+                   suppress_logs: bool = False) -> Iterable[Any]:
         """
-        Create a dynamic loading bar if in INFO mode that can be manually updated with .update(N)
+        Create a dynamic loading bar if in INFO mode for sync tasks.
+        Use `async_data_queue` or `threaded_data_queue` for respective tasks
+
+        :param data: Iterable to wrap with tqdm
+        :param description: Description of the process
+        :param unit: Unit of the process
+        :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
+        :return: tqdm loading bar or completed data
+        """
+        bar = self._create_tqdm(len(list(data)), description, unit, data, suppress_logs)
+        if not isinstance(bar, _DataQueue):
+            # should not reach here
+            raise RuntimeError("Expected DataQueue got tqdm")
+        return bar
+
+    def progress_bar(self,
+                     total: int,
+                     description: str,
+                     unit: str,
+                     suppress_logs: bool = False) -> tqdm[Any]:
+        """
+        Create a process bar if in INFO mode that can be manually updated with .update(N)
 
         :param total: Total length to wrap with tqdm
         :param description: Description of the process
@@ -258,20 +294,11 @@ class Logger:
         :param suppress_logs: Temporarily suppress other INFO level messages (Default: False)
         :return: tqdm loading bar or None if not in INFO mode
         """
-
-        # track if suppressing logs -- only if logger is in info mode
-        is_root = suppress_logs and self._log_level == Level.INFO and self._suppress_depth == 0
-        if is_root:
-            self._suppress_depth += 1
-
-        # wrap in tqdm if correct mode
-        if self._log_level == Level.INFO:
-            iterable = tqdm(desc=_make_tqdm_desc(description, self._tz),
-                            unit=unit, file=sys.stdout, total=total)
-        else:
-            iterable = None
-
-        return _DataQueue(self, iterable, is_root) if iterable else None
+        bar = self._create_tqdm(total, description, unit, suppress_logs=suppress_logs)
+        if not isinstance(bar, tqdm):
+            # should not reach here
+            raise RuntimeError("Expected tqdm got DataQueue")
+        return bar
 
     #
     # Wrapper debug log methods
@@ -463,18 +490,6 @@ class Logger:
             actual_msg = msg
         self._emit(Level.INFO, Severity.FATAL, actual_msg, emit_details, exception, details)
         sys.exit(exit_code)
-
-
-def _make_tqdm_desc(description: str, tz: tzinfo | None) -> str:
-    """
-    Create the standard tqdm description
-
-    :param description: Text description of process
-    :param tz: Timezone for timestamp
-    :return: Full formatted description
-    """
-    log_record = LogRecord(Level.INFO, Severity.INFO, description, caller=_resolve_caller(), timestamp=now(tz))
-    return log_record.format(include_details=False)
 
 
 def _resolve_caller(caller_frame_distance: int = CALLER_FRAME_DISTANCE) -> str | None:

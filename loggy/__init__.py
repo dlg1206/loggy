@@ -30,6 +30,7 @@ fatal = _logger.fatal
 
 async_data_queue = _logger.async_data_queue
 threaded_data_queue = _logger.threaded_data_queue
-manual_data_queue = _logger.manual_data_queue
+data_queue = _logger.data_queue
+progress_bar = _logger.progress_bar
 
 __all__ = ['Level', 'Timer', 'format_time', 'DEFAULT_LOG_LEVEL']
